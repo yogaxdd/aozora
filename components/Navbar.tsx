@@ -18,14 +18,9 @@ const Navbar = () => {
   }, [])
 
   const menuItems = [
-    { name: 'Home', href: '/', icon: Home, featured: true },
-    { name: 'Terbaru', href: '/latest', icon: Zap, featured: true },
-    { name: 'Ongoing', href: '/ongoing', icon: Clock, featured: true },
-    { name: 'Popular', href: '/popular', icon: TrendingUp, featured: true },
-    { name: 'Movie', href: '/movie', icon: Film, featured: true },
-    { name: 'Completed', href: '/completed', icon: Star },
-    { name: 'Schedule', href: '/schedule', icon: Calendar },
-    { name: 'Genres', href: '/genres', icon: Grid3X3 },
+    { name: 'Home', href: '/', icon: Home },
+    { name: 'Terbaru', href: '/latest', icon: Zap },
+    { name: 'Movie', href: '/movie', icon: Film },
     { name: 'Batch', href: '/batch', icon: Download },
   ]
 
@@ -55,7 +50,7 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-1">
-            {menuItems.filter(item => item.featured).map((item) => {
+            {menuItems.map((item) => {
               const Icon = item.icon
               return (
                 <Link
@@ -71,31 +66,6 @@ const Navbar = () => {
                 </Link>
               )
             })}
-            
-            {/* More Dropdown */}
-            <div className="relative group">
-              <button className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white/80 hover:text-white transition-all duration-300 hover:bg-white/10 backdrop-blur-sm">
-                <Grid3X3 size={18} className="group-hover:scale-110 transition-transform duration-300" />
-                <span className="font-medium">More</span>
-              </button>
-              <div className="absolute top-full right-0 mt-2 w-56 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                <div className="p-2">
-                  {menuItems.filter(item => !item.featured).map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        className="flex items-center space-x-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 group/item"
-                      >
-                        <Icon size={18} className="group-hover/item:scale-110 transition-transform duration-200" />
-                        <span className="font-medium">{item.name}</span>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Search Bar */}

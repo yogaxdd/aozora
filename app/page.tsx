@@ -5,82 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Navbar from '@/components/Navbar'
 import { Play, Star, Calendar, TrendingUp, Film, Download, ChevronRight, Eye, Clock, Users, Zap, Flame } from 'lucide-react'
+import { fetchHome } from '@/lib/api'
 
-// Mock data - will be replaced with actual API calls
-const mockFeaturedAnime = [
-  {
-    id: 1,
-    title: "Attack on Titan Final Season",
-    image: "https://i0.wp.com/samehadaku.email/wp-content/uploads/2023/03/Attack-on-Titan-Final-Season-Part-3.jpg",
-    description: "Pertempuran terakhir melawan para titan dimulai...",
-    rating: 9.8,
-    year: 2023,
-    status: "Ongoing"
-  },
-  {
-    id: 2,
-    title: "Demon Slayer: Kimetsu no Yaiba",
-    image: "https://i0.wp.com/samehadaku.email/wp-content/uploads/2023/04/Kimetsu-no-Yaiba-Katanakaji-no-Sato-hen.jpg",
-    description: "Tanjiro melanjutkan perjalanannya untuk menyelamatkan adiknya...",
-    rating: 9.5,
-    year: 2023,
-    status: "Ongoing"
-  },
-  {
-    id: 3,
-    title: "Jujutsu Kaisen Season 2",
-    image: "https://i0.wp.com/samehadaku.email/wp-content/uploads/2023/07/Jujutsu-Kaisen-2nd-Season.jpg",
-    description: "Petualangan baru Yuji dan teman-temannya dimulai...",
-    rating: 9.3,
-    year: 2023,
-    status: "Ongoing"
-  }
-]
 
-const mockLatestAnime = [
-  {
-    id: 1,
-    title: "Frieren: Beyond Journey's End",
-    image: "https://i0.wp.com/samehadaku.email/wp-content/uploads/2023/09/Sousou-no-Frieren.jpg",
-    episode: "Episode 12",
-    rating: 9.7
-  },
-  {
-    id: 2,
-    title: "Spy x Family Season 2",
-    image: "https://i0.wp.com/samehadaku.email/wp-content/uploads/2023/10/Spy-x-Family-Season-2.jpg",
-    episode: "Episode 8",
-    rating: 9.2
-  },
-  {
-    id: 3,
-    title: "Chainsaw Man",
-    image: "https://i0.wp.com/samehadaku.email/wp-content/uploads/2022/10/Chainsaw-Man.jpg",
-    episode: "Episode 12",
-    rating: 8.9
-  },
-  {
-    id: 4,
-    title: "One Piece",
-    image: "https://i0.wp.com/samehadaku.email/wp-content/uploads/2021/01/One-Piece.jpg",
-    episode: "Episode 1089",
-    rating: 9.8
-  },
-  {
-    id: 5,
-    title: "Bleach: TYBW",
-    image: "https://i0.wp.com/samehadaku.email/wp-content/uploads/2022/10/Bleach-Sennen-Kessen-hen.jpg",
-    episode: "Episode 24",
-    rating: 9.4
-  },
-  {
-    id: 6,
-    title: "My Hero Academia Season 7",
-    image: "https://i0.wp.com/samehadaku.email/wp-content/uploads/2023/03/Boku-no-Hero-Academia-7th-Season.jpg",
-    episode: "Episode 15",
-    rating: 8.7
-  }
-]
 
 const categories = [
   { name: 'Anime Terbaru', href: '/latest', icon: Flame, color: 'from-red-500 to-pink-500' },
@@ -94,14 +21,52 @@ const categories = [
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [homeData, setHomeData] = useState<{
+    ongoing_anime: Array<{
+      title: string
+      slug: string
+      poster: string
+      current_episode: string
+      release_day: string
+      newest_release_date: string
+      otakudesu_url: string
+    }>
+    complete_anime: Array<{
+      title: string
+      slug: string
+      poster: string
+      episode_count: string
+      rating: string
+      last_release_date: string
+      otakudesu_url: string
+    }>
+  } | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setIsLoaded(true)
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % mockFeaturedAnime.length)
-    }, 6000)
-    return () => clearInterval(timer)
+    loadHomeData()
   }, [])
+
+  const loadHomeData = async () => {
+    try {
+      const data = await fetchHome()
+      setHomeData(data)
+    } catch (error) {
+      console.error('Error loading home data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (homeData?.ongoing_anime?.length) {
+      const timer = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % Math.min(homeData.ongoing_anime.length, 3))
+      }, 6000)
+      return () => clearInterval(timer)
+    }
+  }, [homeData])
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
@@ -115,13 +80,23 @@ export default function Home() {
       <div className="relative z-10">
         <Navbar />
       
+        {/* Loading State */}
+        {loading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white text-lg font-medium">Loading Aozora...</p>
+            </div>
+          </div>
+        )}
+
         {/* Hero Section */}
-        <section className="relative min-h-screen overflow-hidden">
+        <section className="relative min-h-screen overflow-hidden bg-black">
           {/* Background Carousel */}
           <div className="absolute inset-0">
-            {mockFeaturedAnime.map((anime, index) => (
+            {homeData?.ongoing_anime?.slice(0, 3).map((anime, index) => (
               <div
-                key={anime.id}
+                key={anime.slug}
                 className={`absolute inset-0 transition-all duration-1000 ${
                   index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
                 }`}
@@ -131,124 +106,119 @@ export default function Home() {
                 <div 
                   className="w-full h-full bg-cover bg-center filter brightness-75"
                   style={{
-                    backgroundImage: `url(${anime.image})`
+                    backgroundImage: `url(${anime.poster})`
                   }}
                 />
               </div>
-            ))}
+            )) || []}
           </div>
           
           {/* Hero Content */}
-          <div className="relative z-20 min-h-screen flex items-center">
+          <div className="relative z-20 min-h-screen flex items-center pt-20 sm:pt-24 lg:pt-32 pb-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-              <div className="grid lg:grid-cols-2 gap-12 items-center">
-                {/* Left Content */}
-                <div className={`transform transition-all duration-1000 delay-300 ${
+              <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 lg:gap-16 items-center justify-center min-h-[calc(100vh-10rem)]">
+                {/* Featured Anime Info - Mobile First */}
+                <div className={`transform transition-all duration-1000 delay-300 text-center lg:text-left lg:pl-8 mb-6 lg:mb-0 w-full lg:order-2 ${
+                  isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+                }`}>
+                  {homeData?.ongoing_anime?.[currentSlide] && (
+                    <div className="relative bg-black/60 backdrop-blur-md border border-white/30 rounded-2xl p-4 lg:p-6 shadow-2xl mx-auto max-w-md lg:max-w-none">
+                      <div className="flex items-center justify-center lg:justify-start space-x-2 mb-3">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-xs font-medium text-gray-300">SEDANG TRENDING</span>
+                      </div>
+                      
+                      <h2 className="text-lg lg:text-2xl xl:text-3xl font-bold mb-2 text-white leading-tight">
+                        {homeData.ongoing_anime[currentSlide].title}
+                      </h2>
+                      <p className="text-gray-300 mb-3 leading-relaxed text-xs lg:text-sm">
+                        {homeData.ongoing_anime[currentSlide].current_episode}
+                      </p>
+                      
+                      <div className="flex items-center justify-center lg:justify-start flex-wrap gap-2 mb-4">
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="text-blue-400 w-3 h-3" />
+                          <span className="text-gray-300 text-xs">{homeData.ongoing_anime[currentSlide].newest_release_date}</span>
+                        </div>
+                        <div className="px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs rounded-full font-medium">
+                          Ongoing
+                        </div>
+                      </div>
+                      
+                      <Link href={`/anime/${homeData.ongoing_anime[currentSlide].slug}`} className="inline-flex bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-2 px-4 lg:py-3 lg:px-6 rounded-xl font-bold text-xs lg:text-base transition-all duration-300 transform hover:scale-105 items-center justify-center space-x-2 w-full lg:w-auto">
+                        <Play className="w-3 h-3 lg:w-5 lg:h-5" fill="currentColor" />
+                        <span>Tonton Sekarang</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                {/* Main Content */}
+                <div className={`transform transition-all duration-1000 delay-500 lg:pr-8 w-full lg:order-1 text-center lg:text-left ${
                   isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
                 }`}>
                   <div className="mb-6">
-                    <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600/20 to-blue-600/20 backdrop-blur-sm border border-purple-500/30 rounded-full mb-4">
-                      <Zap className="w-4 h-4 text-purple-400 mr-2" />
-                      <span className="text-sm font-medium text-purple-300">Streaming Terbaik Indonesia</span>
+                    <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-600/40 to-blue-600/40 backdrop-blur-sm border border-purple-500/50 rounded-full mb-4">
+                      <Zap className="w-3 h-3 text-purple-400 mr-2" />
+                      <span className="text-xs font-medium text-purple-300">Streaming Terbaik Indonesia</span>
                     </div>
-                    <h1 className="text-6xl md:text-8xl font-black mb-4 leading-none">
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black mb-4 leading-tight">
                       <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
                         AOZORA
                       </span>
                     </h1>
-                    <p className="text-2xl md:text-3xl font-bold text-white mb-2">
+                    <p className="text-xl sm:text-xl lg:text-2xl font-bold text-white mb-3">
                       Blue Sky Anime
                     </p>
-                    <p className="text-lg text-gray-300 mb-8 leading-relaxed">
+                    <p className="text-sm sm:text-base lg:text-lg text-gray-300 mb-6 leading-relaxed max-w-lg mx-auto lg:mx-0">
                       Nikmati ribuan anime terbaik dengan kualitas 4K HDR. 
                       Streaming tanpa batas, tanpa iklan, kapan saja di mana saja.
                     </p>
                   </div>
+                  
                   {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                    <Link href="/popular" className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25 inline-block">
+                  <div className="flex flex-col sm:flex-row gap-3 mb-6 justify-center lg:justify-start">
+                    <Link href="/popular" className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25 inline-block">
                       <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="relative flex items-center justify-center space-x-3">
-                        <Play className="w-6 h-6" fill="currentColor" />
+                      <div className="relative flex items-center justify-center space-x-2">
+                        <Play className="w-5 h-5" fill="currentColor" />
                         <span>Mulai Streaming</span>
                       </div>
                     </Link>
-                    <Link href="/genres" className="group relative overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-block">
-                      <div className="relative flex items-center justify-center space-x-3">
-                        <Eye className="w-6 h-6" />
+                    <Link href="/genres" className="group relative overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform hover:scale-105 inline-block">
+                      <div className="relative flex items-center justify-center space-x-2">
+                        <Eye className="w-5 h-5" />
                         <span>Jelajahi</span>
                       </div>
                     </Link>
                   </div>
                   
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-6">
+                  <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto lg:mx-0">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-white mb-1">10K+</div>
-                      <div className="text-sm text-gray-400">Anime</div>
+                      <div className="text-xl font-bold text-white mb-1">10K+</div>
+                      <div className="text-xs text-gray-400">Anime</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-white mb-1">4K</div>
-                      <div className="text-sm text-gray-400">Quality</div>
+                      <div className="text-xl font-bold text-white mb-1">4K</div>
+                      <div className="text-xs text-gray-400">Quality</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-white mb-1">24/7</div>
-                      <div className="text-sm text-gray-400">Streaming</div>
+                      <div className="text-xl font-bold text-white mb-1">24/7</div>
+                      <div className="text-xs text-gray-400">Streaming</div>
                     </div>
                   </div>
                 </div>
                 
-                {/* Right Content - Featured Anime Card */}
-                <div className={`transform transition-all duration-1000 delay-500 ${
-                  isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-                }`}>
-                  <div className="relative">
-                    <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
-                      <div className="flex items-center space-x-3 mb-6">
-                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-sm font-medium text-gray-300">SEDANG TRENDING</span>
-                      </div>
-                      
-                      <h2 className="text-3xl font-bold mb-3 text-white">
-                        {mockFeaturedAnime[currentSlide].title}
-                      </h2>
-                      <p className="text-gray-300 mb-6 leading-relaxed">
-                        {mockFeaturedAnime[currentSlide].description}
-                      </p>
-                      
-                      <div className="flex items-center space-x-6 mb-6">
-                        <div className="flex items-center space-x-2">
-                          <Star className="text-yellow-400 fill-current w-5 h-5" />
-                          <span className="font-bold text-white">{mockFeaturedAnime[currentSlide].rating}</span>
-                          <span className="text-gray-400 text-sm">/10</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="text-blue-400 w-5 h-5" />
-                          <span className="text-gray-300">{mockFeaturedAnime[currentSlide].year}</span>
-                        </div>
-                        <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm rounded-full font-medium">
-                          {mockFeaturedAnime[currentSlide].status}
-                        </div>
-                      </div>
-                      
-                      <Link href={`/anime/${mockFeaturedAnime[currentSlide].id}`} className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3">
-                        <Play className="w-6 h-6" fill="currentColor" />
-                        <span>Tonton Sekarang</span>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
               </div>
               
               {/* Slide indicators */}
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3">
-                {mockFeaturedAnime.map((_, index) => (
+              <div className="absolute bottom-6 lg:bottom-12 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
+                {homeData?.ongoing_anime?.slice(0, 3).map((_, index) => (
                   <button
                     key={index}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentSlide 
-                        ? 'bg-gradient-to-r from-purple-500 to-blue-500 scale-125' 
-                        : 'bg-white/30 hover:bg-white/50'
+                    className={`w-2 h-2 lg:w-3 lg:h-3 rounded-full transition-all duration-300 ${
+                      index === currentSlide ? 'bg-white' : 'bg-white/30'
                     }`}
                     onClick={() => setCurrentSlide(index)}
                   />
@@ -320,19 +290,31 @@ export default function Home() {
               </Link>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-              {mockLatestAnime.map((anime, index) => (
-                <div 
-                  key={anime.id} 
-                  className="group cursor-pointer transform transition-all duration-500 hover:scale-105"
+            {loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                {[...Array(6)].map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="bg-gray-700 rounded-2xl aspect-[3/4] mb-4"></div>
+                    <div className="bg-gray-700 h-4 rounded mb-2"></div>
+                    <div className="bg-gray-700 h-3 rounded w-3/4"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                {homeData?.ongoing_anime?.slice(0, 6).map((anime, index) => (
+                <Link 
+                  key={anime.slug} 
+                  href={`/anime/${anime.slug}`}
+                  className="group cursor-pointer transform transition-all duration-500 hover:scale-105 block"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="relative overflow-hidden rounded-2xl aspect-[3/4] mb-4 shadow-2xl">
-                    <Image
-                      src={anime.image}
-                      alt={anime.title}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-700"
+                    <div 
+                      className="w-full h-full bg-cover bg-center group-hover:scale-110 transition-transform duration-700"
+                      style={{
+                        backgroundImage: `url(${anime.poster})`
+                      }}
                     />
                     
                     {/* Gradient Overlays */}
@@ -341,7 +323,7 @@ export default function Home() {
                     
                     {/* Episode Badge */}
                     <div className="absolute top-3 right-3 bg-gradient-to-r from-purple-600 to-blue-600 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg">
-                      {anime.episode}
+                      {anime.current_episode}
                     </div>
                     
                     {/* Play Button */}
@@ -355,8 +337,8 @@ export default function Home() {
                     <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <Star className="text-yellow-400 fill-current w-4 h-4" />
-                          <span className="text-sm font-bold text-white">{anime.rating}</span>
+                          <Calendar className="text-blue-400 w-4 h-4" />
+                          <span className="text-sm font-bold text-white">{anime.newest_release_date}</span>
                         </div>
                         <button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-4 py-2 rounded-lg text-xs font-bold text-white transition-all duration-300 transform hover:scale-105">
                           Tonton
@@ -370,9 +352,10 @@ export default function Home() {
                       {anime.title}
                     </h3>
                   </div>
-                </div>
-              ))}
-            </div>
+                </Link>
+                )) || []}
+              </div>
+            )}
           </div>
         </section>
 

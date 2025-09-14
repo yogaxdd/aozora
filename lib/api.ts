@@ -211,7 +211,26 @@ export const apiEndpoints = {
 }
 
 // API functions
-export const fetchHome = async (): Promise<HomeData> => {
+export const fetchHome = async (): Promise<{
+  ongoing_anime: Array<{
+    title: string
+    slug: string
+    poster: string
+    current_episode: string
+    release_day: string
+    newest_release_date: string
+    otakudesu_url: string
+  }>
+  complete_anime: Array<{
+    title: string
+    slug: string
+    poster: string
+    episode_count: string
+    rating: string
+    last_release_date: string
+    otakudesu_url: string
+  }>
+}> => {
   try {
     const response = await api.get(apiEndpoints.home)
     return response.data.data
@@ -219,10 +238,37 @@ export const fetchHome = async (): Promise<HomeData> => {
     console.error('Error fetching home data:', error)
     // Return mock data for development
     return {
-      recent: { href: '', samehadakuUrl: '', animeList: [] },
-      batch: { href: '', samehadakuUrl: '', batchList: [] },
-      movie: { href: '', samehadakuUrl: '', animeList: [] },
-      top10: { href: '', samehadakuUrl: '', animeList: [] }
+      ongoing_anime: [
+        {
+          title: "Kaoru Hana wa Rin to Saku",
+          slug: "kaoru-hana-wa-rin-to-saku-sub-indo",
+          poster: "https://otakudesu.best/wp-content/uploads/2025/07/Kaoru-Hana-wa-Rin-to-Saku.jpg",
+          current_episode: "Episode 11",
+          release_day: "Minggu",
+          newest_release_date: "14 Sep",
+          otakudesu_url: "https://otakudesu.best/anime/kaoru-hana-wa-rin-to-saku-sub-indo/"
+        },
+        {
+          title: "Witch Watch",
+          slug: "wch-watch-sub-indo",
+          poster: "https://otakudesu.best/wp-content/uploads/2025/04/148017.jpg",
+          current_episode: "Episode 23",
+          release_day: "Minggu",
+          newest_release_date: "14 Sep",
+          otakudesu_url: "https://otakudesu.best/anime/wch-watch-sub-indo/"
+        }
+      ],
+      complete_anime: [
+        {
+          title: "Kuroshitsuji: Midori no Majo-hen",
+          slug: "kuroshitsuji-midori-no-majo-hen-subtitle-indonesia",
+          poster: "https://otakudesu.best/wp-content/uploads/2025/09/Kuroshitsuji-Midori-no-Majo-hen-Sub-Indo.jpg",
+          episode_count: "13",
+          rating: "8.18",
+          last_release_date: "06 Sep",
+          otakudesu_url: "https://otakudesu.best/anime/kuroshitsuji-midori-no-majo-hen-subtitle-indonesia/"
+        }
+      ]
     }
   }
 }
