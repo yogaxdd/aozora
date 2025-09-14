@@ -19,7 +19,15 @@ export default function OngoingPage() {
     setLoading(true)
     try {
       const results = await fetchOngoingAnime(page)
-      setAnimeList(results)
+      setAnimeList({
+        data: results.data.animeList,
+        pagination: {
+          currentPage: results.pagination?.currentPage || 1,
+          totalPages: results.pagination?.totalPages || 1,
+          hasNext: results.pagination?.hasNextPage || false,
+          hasPrev: results.pagination?.hasPrevPage || false
+        }
+      })
     } catch (error) {
       console.error('Error loading ongoing anime:', error)
     } finally {
