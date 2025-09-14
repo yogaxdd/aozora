@@ -27,7 +27,15 @@ export default function SearchPage() {
     setLoading(true)
     try {
       const results = await searchAnime(searchQuery, page)
-      setSearchResults(results)
+      setSearchResults({
+        data: results.data.animeList,
+        pagination: {
+          currentPage: results.pagination?.currentPage || 1,
+          totalPages: results.pagination?.totalPages || 1,
+          hasNext: results.pagination?.hasNextPage || false,
+          hasPrev: results.pagination?.hasPrevPage || false
+        }
+      })
       setCurrentPage(page)
     } catch (error) {
       console.error('Search error:', error)
