@@ -4,9 +4,6 @@ const nextConfig = {
     domains: ['samehadaku.tv', 'samehadaku.email', 'i0.wp.com', 'i1.wp.com', 'i2.wp.com'],
     unoptimized: true
   },
-  experimental: {
-    appDir: true,
-  },
 }
 
 module.exports = nextConfig

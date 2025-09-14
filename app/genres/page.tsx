@@ -16,7 +16,7 @@ export default function GenresPage() {
       setLoading(true)
       try {
         const response = await fetchGenres()
-        setGenres(response.data.genreList)
+        setGenres(response)
       } catch (error) {
         console.error('Error loading genres:', error)
       } finally {
