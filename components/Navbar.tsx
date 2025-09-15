@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Search, Menu, X, Home, Film, Calendar, Star, Play, Grid3X3, Download, Zap, Clock, TrendingUp } from 'lucide-react'
 
-const Navbar = () => {
+type NavbarProps = {
+  forceSolid?: boolean
+}
+
+const Navbar = ({ forceSolid = false }: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isScrolled, setIsScrolled] = useState(false)
@@ -24,10 +28,12 @@ const Navbar = () => {
     { name: 'Batch', href: '/batch', icon: Download },
   ]
 
+  const solid = forceSolid || isScrolled
+
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled 
-        ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-2xl' 
+      solid
+        ? (forceSolid ? 'bg-black border-b border-white/10 shadow-2xl' : 'bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-2xl')
         : 'bg-transparent'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

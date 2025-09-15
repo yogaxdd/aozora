@@ -201,13 +201,15 @@ export const apiEndpoints = {
   schedule: '/anime/schedule',
   ongoing: '/anime/ongoing-anime',
   completed: '/anime/complete-anime',
+  movies: '/anime/complete-anime',
   genres: '/anime/genre',
   search: (query: string) => `/anime/search/${encodeURIComponent(query)}`,
   animeDetail: (slug: string) => `/anime/anime/${slug}`,
   episodeDetail: (slug: string) => `/anime/episode/${slug}`,
   batchDetail: (slug: string) => `/anime/batch/${slug}`,
   genreAnime: (slug: string, page: number = 1) => `/anime/genre/${slug}?page=${page}`,
-  completedPage: (page: number) => `/anime/complete-anime/${page}`
+  completedPage: (page: number) => `/anime/complete-anime/${page}`,
+  list: '/anime/list'
 }
 
 // API functions
@@ -492,7 +494,42 @@ export const fetchMovieAnime = async (page: number = 1): Promise<ApiResponse<{ a
 export const searchAnime = async (query: string, page: number = 1): Promise<ApiResponse<{ animeList: AnimeItem[] }>> => {
   try {
     const response = await api.get(`${apiEndpoints.search(query)}&page=${page}`)
-    return response.data
+    const data = response.data?.data || {}
+    const rawList = (data.anime || data.results || data.ongoingAnimeData || data.completeAnimeData || []) as any[]
+    const animeList: AnimeItem[] = rawList.map((item: any) => ({
+      id: item.slug,
+      animeId: item.slug,
+      title: item.title,
+      poster: item.poster,
+      episodes: item.episode_count || item.current_episode,
+      score: item.rating,
+      status: item.status || (typeof item.episode_count !== 'undefined' ? 'Completed' : 'Unknown'),
+      type: item.type || 'TV',
+      releasedOn: item.last_release_date || item.season || item.newest_release_date,
+      href: `/anime/${item.slug}`,
+      samehadakuUrl: item.otakudesu_url,
+      genreList: item.genres?.map((g: any) => ({
+        title: g.name,
+        genreId: g.slug,
+        href: `/genres/${g.slug}`,
+        samehadakuUrl: g.otakudesu_url
+      })) || []
+    }))
+
+    const p = data.paginationData || data.pagination || {}
+    return {
+      creator: response.data.creator || '',
+      message: response.data.message || '',
+      data: { animeList },
+      pagination: {
+        currentPage: p.current_page || 1,
+        totalPages: p.last_visible_page || p.total_pages || 1,
+        hasNextPage: p.has_next_page || p.current_page < (p.last_visible_page || p.total_pages || 1) || false,
+        hasPrevPage: p.has_previous_page || (p.current_page || 1) > 1 || false,
+        nextPage: p.next_page ?? null,
+        prevPage: p.previous_page ?? null
+      }
+    }
   } catch (error) {
     console.error('Error searching anime:', error)
     return {
@@ -823,13 +860,19 @@ export const fetchAnimeEpisodes = async (animeSlug: string): Promise<Array<{
     const response = await api.get(apiEndpoints.animeDetail(animeSlug))
     const data = response.data.data
     
-    // Extract episodes from API response
-    const episodes = data.episode_list?.map((ep: any, index: number) => ({
-      slug: ep.slug || `${animeSlug}-episode-${index + 1}-sub-indo`,
-      title: ep.title || `Episode ${index + 1}`,
-      number: index + 1,
-      downloadUrl: ep.download_url
-    })) || []
+    // Extract episodes from API response (support both keys)
+    const rawList = (data.episode_lists || data.episode_list || []) as any[]
+    const episodes = rawList.map((ep: any, index: number) => {
+      const num = typeof ep.episode_number !== 'undefined'
+        ? parseInt(String(ep.episode_number))
+        : (ep.title ? parseInt(String(ep.title).match(/\d+/)?.[0] || `${index + 1}`) : index + 1)
+      return {
+        slug: ep.slug || `${animeSlug}-episode-${num}-sub-indo`,
+        title: ep.title || `Episode ${num}`,
+        number: num,
+        downloadUrl: ep.download_url
+      }
+    })
     
     return episodes
   } catch (error) {
@@ -864,28 +907,59 @@ export const fetchEpisodeDetail = async (episodeSlug: string): Promise<{
     const episodeMatch = episodeSlug.match(/-episode-(\d+)-/) || data.episode?.match(/(\d+)/)
     const episodeNumber = episodeMatch ? parseInt(episodeMatch[1]) : 1
     
-    // Clean anime title from slug
-    const animeSlug = episodeSlug.replace(/-episode-\d+.*$/, '')
-    
-    // Map common anime slugs to proper titles
-    const animeSlugToTitle: { [key: string]: string } = {
-      'khwrs': 'Kaoru Hana wa Rin to Saku',
-      'bnha': 'Boku no Hero Academia',
-      'op': 'One Piece',
-      'aot': 'Attack on Titan',
-      'ds': 'Demon Slayer',
-      'jjk': 'Jujutsu Kaisen'
+    // Try to get full anime slug from API response
+    let animeSlug = episodeSlug.replace(/-episode-\d+.*$/, '')
+    const apiAnimeSlug = (data.anime?.slug || data.anime_slug) as string | undefined
+    if (apiAnimeSlug && typeof apiAnimeSlug === 'string') {
+      animeSlug = apiAnimeSlug
+    } else if (data.anime?.otakudesu_url || data.otakudesu_url) {
+      const url: string = data.anime?.otakudesu_url || data.otakudesu_url
+      const m = url.match(/anime\/(.+?)\/?$/)
+      if (m && m[1]) animeSlug = m[1]
     }
     
-    const cleanAnimeTitle = data.anime?.title || 
-                           animeSlugToTitle[animeSlug] ||
-                           animeSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) ||
-                           'Anime Title'
+    // Best-effort anime title resolution
+    let cleanAnimeTitle: string | undefined = data.anime?.title || data.anime_title
+    if (!cleanAnimeTitle) {
+      try {
+        const detail = await api.get(apiEndpoints.animeDetail(animeSlug))
+        cleanAnimeTitle = detail.data?.data?.title
+      } catch (_) {
+        // ignore and fallback below
+      }
+    }
+    if (!cleanAnimeTitle) {
+      cleanAnimeTitle = animeSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }
+    // If API returned an URL as title, parse a readable title from it
+    if (cleanAnimeTitle && /https?:\/\//i.test(cleanAnimeTitle)) {
+      try {
+        const url = new URL(cleanAnimeTitle)
+        // Try to get the part after '/anime/'
+        const afterAnime = url.pathname.split('/anime/')[1] || url.pathname
+        const segment = afterAnime.split('/')
+          .filter(Boolean)
+          .pop() || ''
+        const decoded = decodeURIComponent(segment)
+        cleanAnimeTitle = decoded
+          .replace(/-/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .replace(/\b\w/g, (c) => c.toUpperCase())
+      } catch {
+        // fallback: strip protocol manually
+        const path = cleanAnimeTitle.replace(/^https?:\/\//i, '')
+        const last = path.split('/')
+          .filter(Boolean)
+          .pop() || path
+        cleanAnimeTitle = last.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+      }
+    }
     
     return {
       id: episodeSlug,
       title: data.episode || `Episode ${episodeNumber}`,
-      animeTitle: cleanAnimeTitle,
+      animeTitle: cleanAnimeTitle || 'Anime Title',
       animeSlug: animeSlug,
       number: episodeNumber,
       downloadUrl: data.download_url,

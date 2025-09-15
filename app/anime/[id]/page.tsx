@@ -68,11 +68,11 @@ export default function AnimeDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      <Navbar />
+      <Navbar forceSolid />
       
       <div className="pt-16">
         {/* Hero Section */}
-        <div className="relative h-96 overflow-hidden">
+        <div className="relative py-8 md:py-12 md:min-h-[28rem]">
           <div className="absolute inset-0">
             <Image
               src={anime.poster}
@@ -83,12 +83,12 @@ export default function AnimeDetailPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/40" />
           </div>
           
-          <div className="relative z-10 h-full flex items-end">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
+          <div className="relative z-10 flex items-end">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 lg:pb-16 w-full">
               <div className="flex flex-col md:flex-row items-start md:items-end space-y-6 md:space-y-0 md:space-x-8">
                 {/* Poster */}
                 <div className="flex-shrink-0">
-                  <div className="relative w-48 h-72 rounded-lg overflow-hidden shadow-2xl">
+                  <div className="relative w-32 h-48 md:w-48 md:h-72 rounded-lg overflow-hidden shadow-2xl">
                     <Image
                       src={anime.poster}
                       alt={anime.title}
@@ -100,7 +100,7 @@ export default function AnimeDetailPage() {
                 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
+                  <h1 className="text-3xl md:text-5xl font-bold mb-3 md:mb-4 text-white">
                     {anime.title}
                   </h1>
                   
@@ -131,21 +131,21 @@ export default function AnimeDetailPage() {
                   </div>
                   
                   {anime.synopsis && anime.synopsis.paragraphs.length > 0 && (
-                    <p className="text-gray-300 mb-6 max-w-3xl leading-relaxed">
+                    <p className="text-gray-300 mb-4 md:mb-6 max-w-3xl leading-relaxed line-clamp-4 md:line-clamp-none">
                       {anime.synopsis.paragraphs[0]}
                     </p>
                   )}
                   
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-4">
-                    <button className="flex items-center space-x-2 bg-aozora-blue-600 hover:bg-aozora-blue-700 px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
+                  <div className="flex flex-wrap gap-3 md:gap-4">
+                    <button className="flex items-center space-x-2 bg-aozora-blue-600 hover:bg-aozora-blue-700 px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-colors duration-200 text-sm md:text-base">
                       <Play size={20} />
                       <span>Mulai Menonton</span>
                     </button>
                     
                     <button 
                       onClick={() => setIsFavorite(!isFavorite)}
-                      className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
+                      className={`flex items-center space-x-2 px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-colors duration-200 text-sm md:text-base ${
                         isFavorite 
                           ? 'bg-red-600 hover:bg-red-700 text-white' 
                           : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
@@ -155,7 +155,7 @@ export default function AnimeDetailPage() {
                       <span>{isFavorite ? 'Favorit' : 'Tambah ke Favorit'}</span>
                     </button>
                     
-                    <button className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
+                    <button className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-colors duration-200 text-sm md:text-base">
                       <Share2 size={20} />
                       <span>Bagikan</span>
                     </button>
